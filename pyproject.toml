@@ -10,10 +10,10 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Guillaume Martrou", email = "guillaume.martrou@gmail.com"},
 ]
 maintainers = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Guillaume Martrou", email = "guillaume.martrou@gmail.com"},
 ]
 keywords = ["chemistry", "smiles", "chemfig", "latex", "lewis"]
 classifiers = [

@@ -13,8 +13,23 @@ Main Functions:
     format_chemfig(code): Format chemfig code for human readability
 """
 
-from .core import smiles_to_lewis
+from .core import (
+    smiles2lewis,
+    formula2lewis,
+    cid2lewis,
+    iupac2lewis,
+    inchi2lewis,
+    inchikey2lewis,
+)
 from .formatting import format_chemfig
 
 __version__ = "1.0.0"
-__all__ = ['smiles_to_lewis', 'format_chemfig']
+__all__ = [
+    'smiles2lewis',
+    'formula2lewis',
+    'cid2lewis',
+    'iupac2lewis',
+    'inchi2lewis',
+    'inchikey2lewis',
+    'format_chemfig',
+]

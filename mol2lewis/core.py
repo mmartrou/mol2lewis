@@ -10,12 +10,14 @@ import re
 from collections import defaultdict
 from rdkit import Chem
 from rdkit.Chem import AllChem
+import random
+import pubchempy as pcp
 
 from .geometry import calculate_charge_entries
 from .formatting import format_chemfig
 
 
-def smiles_to_lewis(smiles, **mol2chemfig_options):
+def smiles2lewis(smiles, **mol2chemfig_options):
     """
     Convert a SMILES string to formatted chemfig LaTeX code with lone pairs.
     
@@ -49,8 +51,8 @@ def smiles_to_lewis(smiles, **mol2chemfig_options):
         str: Formatted chemfig code ready to use in \\chemfig{...}, or None on error
         
     Example:
-        >>> code = smiles_to_lewis('CCO')
-        >>> code_rotated = smiles_to_lewis('CCO', angle=45, aromatic_circles=True)
+        >>> code = smiles2lewis('CCO')
+        >>> code_rotated = smiles2lewis('CCO', angle=45, aromatic_circles=True)
     """
     draft_mode = mol2chemfig_options.pop('draft', False)
     # Parse SMILES
@@ -189,3 +191,131 @@ def smiles_to_lewis(smiles, **mol2chemfig_options):
     # Format for readability
     formatted = format_chemfig(sanitized)
     return formatted
+
+
+def formula2lewis(formula, selection='first', n=None, lang='en', **options):
+    """
+    Convert a molecular formula to ChemFig LaTeX with Lewis structures.
+    
+    Args:
+        formula (str): Molecular formula (e.g., 'C2H6O').
+        selection (str): 'first' (default), 'random', 'all', or 'first_n'.
+        n (int): Number of results for 'first_n' (ignored otherwise).
+        lang (str): Language for name ('en' for IUPAC, 'fr' for French, etc.).
+        **options: Passed to smiles_to_lewis (e.g., draft=True).
+    
+    Returns:
+        str or list: ChemFig code(s) for the selected SMILES.
+    """
+    try:
+        compounds = pcp.get_compounds(formula, 'formula')
+        if not compounds:
+            raise ValueError(f"No compounds found for formula '{formula}'")
+        
+        # Filter out isotopically labeled compounds (e.g., [13C], [2H])
+        import re
+        smiles_list = []
+        seen = set()
+        for c in compounds:
+            if c.smiles and not re.search(r'\[\d+', c.smiles):
+                if c.smiles not in seen:
+                    smiles_list.append(c.smiles)
+                    seen.add(c.smiles)
+        if not smiles_list:
+            raise ValueError(f"No SMILES found for formula '{formula}'")
+        
+        if selection == 'first':
+            selected_smiles = smiles_list[0]
+        elif selection == 'random':
+            selected_smiles = random.choice(smiles_list)
+        elif selection == 'all':
+            selected_smiles = smiles_list
+        elif selection == 'first_n':
+            if n is None:
+                n = 1
+            selected_smiles = smiles_list[:n]
+        else:
+            raise ValueError("Invalid selection. Use 'first', 'random', 'all', or 'first_n'.")
+        
+        if isinstance(selected_smiles, list):
+            return [smiles2lewis(smiles, **options) for smiles in selected_smiles]
+        else:
+            return smiles2lewis(selected_smiles, **options)
+    except Exception as e:
+        raise ValueError(f"Error fetching data for formula '{formula}': {e}")
+
+def cid2lewis(cid, **options):
+    """
+    Convert a PubChem CID to ChemFig LaTeX with Lewis structures.
+    
+    Args:
+        cid (int or str): PubChem Compound ID.
+        **options: Passed to smiles2lewis.
+    
+    Returns:
+        str: ChemFig code.
+    """
+    try:
+        compound = pcp.Compound.from_cid(cid)
+        if not compound or not compound.smiles:
+            raise ValueError(f"No SMILES found for CID '{cid}'")
+        return smiles2lewis(compound.smiles, **options)
+    except Exception as e:
+        raise ValueError(f"Error fetching data for CID '{cid}': {e}")
+
+def iupac2lewis(name, **options):
+    """
+    Convert an IUPAC name to ChemFig LaTeX with Lewis structures.
+    
+    Args:
+        name (str): IUPAC name (supports multiple languages if available in PubChem).
+        **options: Passed to smiles2lewis.
+    
+    Returns:
+        str: ChemFig code.
+    """
+    try:
+        compounds = pcp.get_compounds(name, 'name')
+        if not compounds or not compounds[0].smiles:
+            raise ValueError(f"No SMILES found for IUPAC name '{name}'")
+        return smiles2lewis(compounds[0].smiles, **options)
+    except Exception as e:
+        raise ValueError(f"Error fetching data for IUPAC name '{name}': {e}")
+
+def inchi2lewis(inchi, **options):
+    """
+    Convert an InChI string to ChemFig LaTeX with Lewis structures.
+    
+    Args:
+        inchi (str): InChI string.
+        **options: Passed to smiles2lewis.
+    
+    Returns:
+        str: ChemFig code.
+    """
+    try:
+        compounds = pcp.get_compounds(inchi, 'inchi')
+        if not compounds or not compounds[0].smiles:
+            raise ValueError(f"No SMILES found for InChI '{inchi}'")
+        return smiles2lewis(compounds[0].smiles, **options)
+    except Exception as e:
+        raise ValueError(f"Error fetching data for InChI '{inchi}': {e}")
+
+def inchikey2lewis(inchikey, **options):
+    """
+    Convert an InChIKey to ChemFig LaTeX with Lewis structures.
+    
+    Args:
+        inchikey (str): InChIKey string.
+        **options: Passed to smiles2lewis.
+    
+    Returns:
+        str: ChemFig code.
+    """
+    try:
+        compounds = pcp.get_compounds(inchikey, 'inchikey')
+        if not compounds or not compounds[0].smiles:
+            raise ValueError(f"No SMILES found for InChIKey '{inchikey}'")
+        return smiles2lewis(compounds[0].smiles, **options)
+    except Exception as e:
+        raise ValueError(f"Error fetching data for InChIKey '{inchikey}': {e}")
