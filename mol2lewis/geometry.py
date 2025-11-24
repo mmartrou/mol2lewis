@@ -74,9 +74,9 @@ PAIR_SYMBOL_DRAFT = r'\:'    # Draft mode: spacing marker
 SINGLE_SYMBOL = r'\.'
 
 
-def calculate_charge_entries(atom, conf, pt, rotation_angle=0, flip=False, flop=False, draft=False):
-    """
-    Calculate the \charge{} entries for a given atom based on its geometry.
+def calculate_charge_entries(atom, conf, pt, rotation_angle=0, flip=False, flop=False, draft=False, aromatic_circles=False):
+    r"""
+    Calculate the \\charge{} entries for a given atom based on its geometry.
     
     Args:
         atom: RDKit atom object
@@ -86,6 +86,7 @@ def calculate_charge_entries(atom, conf, pt, rotation_angle=0, flip=False, flop=
         flip: Horizontal flip - angle becomes 180-angle (default: False)
         flop: Vertical flip - angle becomes -angle (default: False)
         draft: Draft mode - annotate bonds and lone pairs with visual markers (default: False)
+        aromatic_circles: If True with draft mode, aromatic bonds use only \\red (default: False)
         
     Returns:
         str: Comma-separated charge entries (e.g., "0=\\|,180=\\|")
@@ -145,7 +146,13 @@ def calculate_charge_entries(atom, conf, pt, rotation_angle=0, flip=False, flop=
             bo = bond_angle_to_order[orig_angle]
             angle_int = int(round(trans_angle))
             
-            if bo >= 3:  # Triple bond: \red then \redd
+            # If aromatic_circles is True, use only \red for aromatic bonds
+            is_aromatic = aromatic_bond_angles and orig_angle in aromatic_bond_angles
+            
+            if aromatic_circles and is_aromatic:
+                # Aromatic bonds: only \red (pas d'alternance)
+                entries.append(f"{angle_int}=\\red")
+            elif bo >= 3:  # Triple bond: \red then \redd
                 entries.append(f"{angle_int}=\\red")
                 entries.append(f"{angle_int}=\\redd")
             elif bo >= 2:  # Double bond: \redd

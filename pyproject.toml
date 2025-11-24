@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mol2lewis"
-version = "0.1.0"
-description = "Convert SMILES to ChemFig LaTeX with Lewis structures"
+version = "1.0.2"
+description = "Convert chemical identifiers (SMILES, CID, InChI, formulas) to ChemFig LaTeX with Lewis structures"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
@@ -15,9 +15,9 @@ authors = [
 maintainers = [
     {name = "Guillaume Martrou", email = "guillaume.martrou@gmail.com"},
 ]
-keywords = ["chemistry", "smiles", "chemfig", "latex", "lewis"]
+keywords = ["chemistry", "smiles", "chemfig", "latex", "lewis", "pubchem", "inchi"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -30,13 +30,15 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Chemistry",
 ]
 dependencies = [
-    "rdkit>=2023.0.0",
+    "rdkit>=2018.09.1",
+    "mol2chemfigPy3>=1.5.0",
+    "pubchempy>=1.0.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/mol2lewis"
-Repository = "https://github.com/yourusername/mol2lewis"
-Issues = "https://github.com/yourusername/mol2lewis/issues"
+Homepage = "https://https://github.com/mmartrou/mol2lewis"
+Repository = "https://github.com/mmartrou/mol2lewis"
+Documentation = "https://https://github.com/mmartrou/mol2lewis/blob/master/README.md"
 
 [tool.setuptools]
 packages = ["mol2lewis"]
