@@ -51,10 +51,10 @@ def _generate_chemfig(smiles, **options):
     try:
         # Build mol2chemfig command
         cmd = ['mol2chemfig']
-        
+
         # Add atom numbers for matching
         cmd.append('--atom-numbers')
-        
+
         # Map options to mol2chemfig flags
         if options.get('angle', 0) != 0:
             cmd.extend(['--angle', str(options['angle'])])
@@ -68,16 +68,19 @@ def _generate_chemfig(smiles, **options):
             cmd.append('--flop')
         if options.get('aromatic_circles', False):
             cmd.append('--aromatic-circles')
-        
+        # Ajout de l'option --wrap-chemfig (True par défaut)
+        if options.get('wrap_chemfig', True):
+            cmd.append('--wrap-chemfig')
+
         cmd.append(temp_molfile)
-        
+
         # Run mol2chemfig
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             return None
-        
+
         tex_content = result.stdout.strip()
-        
+
     finally:
         # Clean up temp file
         if os.path.exists(temp_molfile):
@@ -272,7 +275,7 @@ def _enumerate_stereo_via_rdkit(smiles):
 def lewis(input_string, **options):
     """
     Convert any chemical identifier to formatted chemfig LaTeX code with lone pairs.
-    
+
     Automatically recognizes input type:
     - SMILES strings (e.g., 'CCO')
     - PubChem CID (numeric, e.g., 702)
@@ -280,7 +283,7 @@ def lewis(input_string, **options):
     - InChIKey (e.g., 'LFQSCWFLJHTTHZ-UHFFFAOYSA-N')
     - Chemical formulas (e.g., 'C2H4O2')
     - File paths (e.g., 'molecule.mol', 'structure.smi')
-    
+
     Args:
         input_string (str or int): Chemical identifier
         **options: Options:
@@ -292,8 +295,9 @@ def lewis(input_string, **options):
             - aromatic_circles (bool): Draw aromatic circles (default: False)
             - selection (str): For formulas - 'first', 'random', 'all', or 'first_n' (default: 'first')
             - n (int): For formulas - number of results for 'first_n' (default: None)
-                - enumerate_stereo (bool): For formulas - enumerate stereoisomers locally with RDKit
-        
+            - enumerate_stereo (bool): For formulas - enumerate stereoisomers locally with RDKit
+            - wrap_chemfig (bool): Wrap output in \\chemfig{...} (default: True)
+
     Returns:
         list: List of dicts with 'normal' and 'draft' chemfig codes, or None on error
     """
