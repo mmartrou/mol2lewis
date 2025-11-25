@@ -48,6 +48,7 @@ print(code[0]['normal'])    # chemfig code for the lewis code
 
 will give you
 ```bash
+\chemfig{
 H
 -[:343.9]C
 (
@@ -65,6 +66,7 @@ H
 )
 -[:343.9]\charge{224=\|,344=\|}{O}
 -[:43.9]H
+}
 ```
 
 and 
@@ -76,6 +78,7 @@ print(code[0]['draft'])    # chemfig code for the lewis code
 will give you
 
 ```bash
+\chemfig{
 \charge{344=\red}{H}
 -[:343.9]\charge{344=\red,164=\red,74=\red,254=\red}{C}
 (
@@ -93,6 +96,7 @@ will give you
 )
 -[:343.9]\charge{164=\red,44=\red,224=\:,344=\:}{O}
 -[:43.9]\charge{224=\red}{H}
+}
 ```
 
 The same `code` can be obtained from other input types:
@@ -129,9 +133,9 @@ If you objective is only to get the pdf of the molecule, you can just compile th
 \usepackage{chemfig}
 \usepackage{mol2lewis}  % Required only for draft mode
 \begin{document}
-\chemfig{
-    ...the molecule code here...
-    }
+
+...the chemfig molecule code here...
+
 \end{document}
 ```
 
