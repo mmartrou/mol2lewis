@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mol2lewis"
-version = "1.0.3"
+version = "1.0.4"
 description = "Convert chemical identifiers (SMILES, CID, InChI, formulas) to ChemFig LaTeX with Lewis structures"
 readme = "README.md"
 license = {text = "MIT"}
@@ -44,4 +44,4 @@ Documentation = "https://https://github.com/mmartrou/mol2lewis/blob/master/READM
 packages = ["mol2lewis"]
 
 [tool.setuptools.package-data]
-mol2lewis = ["*.py"]
+mol2lewis = ["*.py", "*.sty"]

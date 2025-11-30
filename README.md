@@ -1,5 +1,7 @@
 # mol2lewis
 
+[![GitHub Repository](https://img.shields.io/badge/GitHub-mmartrou/mol2lewis-blue)](https://github.com/mmartrou/mol2lewis)
+
 Convert various chemical identifiers (SMILES, formulas, CIDs, names, InChI, InChIKey) to ChemFig LaTeX code with Lewis structures, including lone pairs and draft mode annotations. 
 It's based on [mol2chemfig package](https://ctan.org/pkg/mol2chemfig) and the [python3 version](https://github.com/Augus1999/mol2chemfigPy3). It only works for relatively easy molecules. It can't be working with molecules with hundreads of elements.
 
@@ -32,7 +34,7 @@ This will automatically install RDKit, mol2chemfigPy3 (which includes the mol2ch
 The lewis command returns a list of python dictionaries. One dictionary for each isomer.
 So, if only one isomer is available, only one dictionary will appear in the list.
 
-Each dictionary has two keys: 'normal' and 'draft' keys, corresponding to the two output modes.
+Each dictionary has four keys: 'normal', 'draft', 'iupac_name', and 'name', corresponding to the ChemFig code in normal/draft modes, the IUPAC name, and the common name (from PubChem).
 
 Draft mode adds red visual markers to bonds for educational purposes.
 
@@ -99,6 +101,15 @@ will give you
 }
 ```
 
+```python
+isomers = lewis("C2H6O", selection='all')  # All isomers of C2H6O
+print(isomers[0]['iupac_name'])  # IUPAC name: ethanol
+print(isomers[0]['name'])       # Common name: ethanol
+print(isomers[1]['iupac_name'])  # IUPAC name: dimethyl ether
+print(isomers[1]['name'])       # Common name: methoxymethane
+```
+
+
 The same `code` can be obtained from other input types:
 
 ```python
@@ -139,6 +150,22 @@ If you objective is only to get the pdf of the molecule, you can just compile th
 \end{document}
 ```
 
+The `mol2lewis.sty` LaTeX package is automatically included in the Python package installation for convenience.
+
+**LaTeX Package Installation:**
+
+After installing `mol2lewis` via pip, you can retrieve the `mol2lewis.sty` file from the Python installation:
+
+```bash
+# Find where pip installed mol2lewis
+pip show mol2lewis
+
+# Copy the .sty file to your LaTeX directory
+cp $(python -c "import mol2lewis; import os; print(os.path.dirname(mol2lewis.__file__))")/mol2lewis.sty /your/latex/directory/
+```
+
+Alternatively, simply download the file from the GitHub repository and place it in your LaTeX directory.
+
 ### With Options
 
 ```python
@@ -171,7 +198,7 @@ Universal converter that automatically recognizes input type (SMILES, CID, InChI
 - `relative_angle` (bool): Use relative angles (default: False)
 - `show_carbons` (bool): Show carbon symbols (default: True)
 
-**Returns:** A list of dictionaries with 'normal' and 'draft' keys. Each dictionary corresponds to an isomer.
+**Returns:** A list of dictionaries with 'normal', 'draft', 'iupac_name', and 'name' keys. Each dictionary corresponds to an isomer.
 
 
 ## How It Works
@@ -218,16 +245,32 @@ from mol2lewis import lewis
 isomers = lewis("C2H6O", selection="all")
 
 for i, iso in enumerate(isomers, 1):
-    print(f"Isomer {i}:")
+    print(f"Isomer {i}: {iso['iupac_name']} ({iso['name']})")
     print("Normal:\n", iso["normal"], "\n")
     print("Draft:\n", iso["draft"], "\n")
 ```
 
-Each element in the `isomers` list is a dictionary with two keys:
+Each element in the `isomers` list is a dictionary with four keys:
 - `normal`: chemfig code ready to use in LaTeX
 - `draft`: annotated version to visualize lone pairs and charges
+- `iupac_name`: IUPAC name of the molecule
+- `name`: common name of the molecule
 
 You can copy and paste these codes into a LaTeX document using the chemfig package (see above for details).
+
+For draft mode, make sure to include the `mol2lewis.sty` package in your LaTeX preamble. It's a short file with only this inside (but draft mode can't work without it):
+
+```latex
+\ProvidesPackage{mol2lewis}[2025/01/22 v0.2.0 Commands for mol2lewis draft mode]
+\RequirePackage{xcolor}
+
+% Draft mode markers for bonds
+\newcommand{\red}{\.[{.style={draw=red,fill=red}}]} % red dot for single bond in draft mode
+\newcommand{\redd}{\:[{.style={draw=red,fill=red}}]}% red dots for double bond in draft mode
+\newcommand{\draftlp}{\:}                           % two dots for lone pair in draft mode
+
+\endinput
+```
 
 ## License
 

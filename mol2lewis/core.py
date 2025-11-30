@@ -9,7 +9,6 @@ import re
 import os
 import subprocess
 import tempfile
-from collections import defaultdict
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit import RDLogger
@@ -23,6 +22,25 @@ import pubchempy as pcp
 
 from .geometry import calculate_charge_entries
 from .formatting import format_chemfig
+
+
+def _add_iupac_and_common_name(result_dict, smiles):
+    """Ajoute les clés 'iupac_name' et 'name' au dictionnaire résultat à partir du SMILES."""
+    try:
+        compounds = pcp.get_compounds(smiles, 'smiles')
+        if compounds and len(compounds) > 0:
+            compound = compounds[0]
+            iupac = getattr(compound, 'iupac_name', None)
+            synonyms = getattr(compound, 'synonyms', [])
+            name = synonyms[0] if synonyms else None
+            result_dict['iupac_name'] = iupac
+            result_dict['name'] = name
+        else:
+            result_dict['iupac_name'] = None
+            result_dict['name'] = None
+    except Exception:
+        result_dict['iupac_name'] = None
+        result_dict['name'] = None
 
 
 def _is_chemical_formula(s):
@@ -303,6 +321,7 @@ def lewis(input_string, **options):
     """
     # Convert input to SMILES
     smiles = None
+    input_str = str(input_string)  # Ensure string for later use
     
     # Try to interpret the input - priority order: CID, InChI, InChIKey, File, SMILES, then Formula
     try:
@@ -312,7 +331,6 @@ def lewis(input_string, **options):
         smiles = compound.smiles if compound else None
     except (ValueError, TypeError):
         # String input - check for special formats first
-        input_str = str(input_string)
         
         if input_str.startswith('InChI='):
             # InChI format
@@ -365,7 +383,11 @@ def lewis(input_string, **options):
     # If we found a valid SMILES, use it
     if smiles is not None:
         result = _generate_chemfig(smiles, **options)
-        return [result] if result else None
+        if result:
+            _add_iupac_and_common_name(result, smiles)
+            return [result]
+        else:
+            return None
     
     # Last resort: try as chemical formula (e.g., 'C2H4O2')
     if _is_chemical_formula(input_string):
@@ -442,8 +464,12 @@ def lewis(input_string, **options):
                 if expanded:
                     selected_smiles = expanded
             
-            generated = [_generate_chemfig(smiles, **options) for smiles in selected_smiles]
-            generated = [g for g in generated if g is not None]
+            generated = []
+            for smiles in selected_smiles:
+                res = _generate_chemfig(smiles, **options)
+                if res:
+                    _add_iupac_and_common_name(res, smiles)
+                    generated.append(res)
             return generated
         except Exception:
             return []
@@ -454,7 +480,11 @@ def lewis(input_string, **options):
             if compounds and compounds[0].smiles:
                 smiles = compounds[0].smiles
                 result = _generate_chemfig(smiles, **options)
-                return [result] if result else None
+                if result:
+                    _add_iupac_and_common_name(result, smiles)
+                    return [result]
+                else:
+                    return None
         except Exception:
             pass
     # Nothing worked
