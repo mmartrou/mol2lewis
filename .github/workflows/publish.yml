@@ -2,9 +2,6 @@ name: Publish to PyPI
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
   release:
     types: [published]
 
@@ -28,15 +25,7 @@ jobs:
       - name: Build package
         run: python -m build
 
-      - name: Publish to TestPyPI
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        run: twine upload --repository testpypi dist/*
-
       - name: Publish to PyPI
-        if: github.event_name == 'release'
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
