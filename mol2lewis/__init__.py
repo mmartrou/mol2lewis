@@ -18,7 +18,7 @@ Main Functions:
 from .core import lewis
 from .formatting import format_chemfig
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 __all__ = [
     "lewis",
     "format_chemfig",
