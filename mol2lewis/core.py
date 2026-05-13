@@ -47,6 +47,25 @@ def _is_chemical_formula(s):
     return bool(re.match(r'^[A-Z][a-z]?\d*([A-Z][a-z]?\d*)*$', s))
 
 
+def _extract_pubchem_smiles(compound):
+    """Return the best available SMILES string from a PubChem compound object."""
+    if compound is None:
+        return None
+
+    for attr in ('smiles', 'isomeric_smiles', 'canonical_smiles', 'connectivity_smiles'):
+        value = getattr(compound, attr, None)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+
+    if isinstance(compound, dict):
+        for key in ('smiles', 'isomeric_smiles', 'canonical_smiles', 'connectivity_smiles'):
+            value = compound.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+
+    return None
+
+
 def _generate_chemfig(smiles, **options):
     """
     Generate chemfig code for a SMILES string, returning both normal and draft versions.
@@ -328,7 +347,7 @@ def lewis(input_string, **options):
         cid = int(input_string)
         # It's a CID - fetch from PubChem
         compound = pcp.Compound.from_cid(cid)
-        smiles = compound.smiles if compound else None
+        smiles = _extract_pubchem_smiles(compound)
     except (ValueError, TypeError):
         # String input - check for special formats first
         
@@ -345,7 +364,7 @@ def lewis(input_string, **options):
             try:
                 compounds = pcp.get_compounds(input_str, 'inchikey')
                 if compounds and len(compounds) > 0:
-                    smiles = compounds[0].smiles
+                    smiles = _extract_pubchem_smiles(compounds[0])
             except Exception:
                 pass
         elif os.path.isfile(input_str):
@@ -404,10 +423,11 @@ def lewis(input_string, **options):
             smiles_list = []
             seen = set()
             for c in compounds:
-                if c.smiles and not re.search(r'\[\d+', c.smiles):
-                    if c.smiles not in seen:
-                        smiles_list.append(c.smiles)
-                        seen.add(c.smiles)
+                c_smiles = _extract_pubchem_smiles(c)
+                if c_smiles and not re.search(r'\[\d+', c_smiles):
+                    if c_smiles not in seen:
+                        smiles_list.append(c_smiles)
+                        seen.add(c_smiles)
             if not smiles_list:
                 return []
             
@@ -477,8 +497,9 @@ def lewis(input_string, **options):
         # Try as PubChem name if nothing else matched
         try:
             compounds = pcp.get_compounds(input_str, 'name')
-            if compounds and compounds[0].smiles:
-                smiles = compounds[0].smiles
+            if compounds:
+                smiles = _extract_pubchem_smiles(compounds[0])
+            if smiles:
                 result = _generate_chemfig(smiles, **options)
                 if result:
                     _add_iupac_and_common_name(result, smiles)
