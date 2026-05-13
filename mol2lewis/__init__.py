@@ -15,13 +15,11 @@ Main Functions:
     format_chemfig(code): Format chemfig code for human readability
 """
 
-from .core import (
-    lewis,
-)
+from .core import lewis
 from .formatting import format_chemfig
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __all__ = [
-    'lewis',
-    'format_chemfig',
+    "lewis",
+    "format_chemfig",
 ]

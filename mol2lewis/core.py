@@ -1,4 +1,4 @@
-"""
+﻿"""
 Core Module
 ===========
 
@@ -7,6 +7,7 @@ Main conversion logic from various chemical identifiers to chemfig code with Lew
 
 import re
 import os
+import shutil
 import subprocess
 import tempfile
 from rdkit import Chem
@@ -21,11 +22,10 @@ import random
 import pubchempy as pcp
 
 from .geometry import calculate_charge_entries
-from .formatting import format_chemfig
 
 
 def _add_iupac_and_common_name(result_dict, smiles):
-    """Ajoute les clés 'iupac_name' et 'name' au dictionnaire résultat à partir du SMILES."""
+    """Ajoute les clÃ©s 'iupac_name' et 'name' au dictionnaire rÃ©sultat Ã  partir du SMILES."""
     try:
         compounds = pcp.get_compounds(smiles, 'smiles')
         if compounds and len(compounds) > 0:
@@ -70,9 +70,6 @@ def _generate_chemfig(smiles, **options):
         # Build mol2chemfig command
         cmd = ['mol2chemfig']
 
-        # Add atom numbers for matching
-        cmd.append('--atom-numbers')
-
         # Map options to mol2chemfig flags
         if options.get('angle', 0) != 0:
             cmd.extend(['--angle', str(options['angle'])])
@@ -86,18 +83,30 @@ def _generate_chemfig(smiles, **options):
             cmd.append('--flop')
         if options.get('aromatic_circles', False):
             cmd.append('--aromatic-circles')
-        # Ajout de l'option --wrap-chemfig (True par défaut)
+        # Ajout de l'option --wrap-chemfig (True par dÃ©faut)
         if options.get('wrap_chemfig', True):
             cmd.append('--wrap-chemfig')
 
         cmd.append(temp_molfile)
 
-        # Run mol2chemfig
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        # Run mol2chemfig with explicit timeout and executable checks.
+        if shutil.which('mol2chemfig') is None:
+            return None
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=float(options.get('mol2chemfig_timeout', 30.0)),
+            check=True,
+        )
+
         if result.returncode != 0:
             return None
 
         tex_content = result.stdout.strip()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+        return None
 
     finally:
         # Clean up temp file
@@ -186,7 +195,8 @@ def _generate_chemfig(smiles, **options):
         tex_normal = re.sub(r'\(\s*\n\s*-\[[^\]]*draw=[^]]*\][^\\]*\\mcfcringle\{[^}]*\}\s*\n\s*\)\s*\n', '', tex_normal)
     
     sanitized_normal = re.sub(r"\s*%\s*[^\n]*", "", tex_normal).strip()
-    formatted_normal = format_chemfig(sanitized_normal)
+    # Keep mol2chemfig topology as-is: only charges are injected.
+    formatted_normal = sanitized_normal
     
     # Generate draft version (draft=True)
     INTEREST_draft = {'H', 'C', 'O', 'N', 'S', 'P', 'F', 'Cl', 'Br', 'I', 'B', 'Si', 'Ge', 'As', 'Se'}
@@ -237,27 +247,17 @@ def _generate_chemfig(smiles, **options):
     # Cleanup for draft
     tex_draft = re.sub(r"\\charge\{[^}]*\}\{(-\[:[^\]]+\])\}", r"\1", tex_draft)
     
-    # In draft mode with aromatic_circles, mark aromatic bonds and circles in red
+    # In draft mode with aromatic_circles, color only the aromatic circle glyph.
     if options.get('aromatic_circles', False):
-        aromatic_atoms = set()
-        for atom in mol_with_h.GetAtoms():
-            if atom.GetIsAromatic():
-                aromatic_atoms.add(atom.GetIdx())
-        
-        # Color mcfcringle circles red
-        tex_draft = re.sub(
-            r'(-\[[^\]]*),draw=none([^\]]*\].*?\\mcfcringle)',
-            r'\1,draw=red\2',
-            tex_draft
-        )
         tex_draft = re.sub(
             r'\\mcfcringle\{([^}]+)\}',
             r'\\color{red}{\\mcfcringle{\1}}',
-            tex_draft
+            tex_draft,
         )
     
     sanitized_draft = re.sub(r"\s*%\s*[^\n]*", "", tex_draft).strip()
-    formatted_draft = format_chemfig(sanitized_draft)
+    # Keep mol2chemfig topology as-is: only charges and optional circle color.
+    formatted_draft = sanitized_draft
     
     return {'normal': formatted_normal, 'draft': formatted_draft}
 
@@ -317,7 +317,7 @@ def lewis(input_string, **options):
             - wrap_chemfig (bool): Wrap output in \\chemfig{...} (default: True)
 
     Returns:
-        list: List of dicts with 'normal' and 'draft' chemfig codes, or None on error
+        list: List of dicts with 'normal' and 'draft' chemfig codes. Returns [] on error.
     """
     # Convert input to SMILES
     smiles = None
@@ -338,7 +338,7 @@ def lewis(input_string, **options):
                 mol = Chem.MolFromInchi(input_str)
                 if mol is not None:
                     smiles = Chem.MolToSmiles(mol)
-            except:
+            except (ValueError, RuntimeError, TypeError):
                 pass
         elif '-' in input_str and len(input_str) == 27 and input_str.count('-') == 2:
             # Likely an InChIKey (format: XXXXXXXXXXXXXX-XXXXXXXXXX-X)
@@ -346,7 +346,7 @@ def lewis(input_string, **options):
                 compounds = pcp.get_compounds(input_str, 'inchikey')
                 if compounds and len(compounds) > 0:
                     smiles = compounds[0].smiles
-            except:
+            except Exception:
                 pass
         elif os.path.isfile(input_str):
             # File path - read molecular structure from file
@@ -365,7 +365,7 @@ def lewis(input_string, **options):
                 
                 if mol is not None:
                     smiles = Chem.MolToSmiles(mol)
-            except:
+            except (OSError, ValueError, TypeError, RuntimeError, IndexError):
                 pass
         else:
             # Try as SMILES first (even if it looks like a formula)
@@ -387,7 +387,7 @@ def lewis(input_string, **options):
             _add_iupac_and_common_name(result, smiles)
             return [result]
         else:
-            return None
+            return []
     
     # Last resort: try as chemical formula (e.g., 'C2H4O2')
     if _is_chemical_formula(input_string):
@@ -484,11 +484,12 @@ def lewis(input_string, **options):
                     _add_iupac_and_common_name(result, smiles)
                     return [result]
                 else:
-                    return None
+                    return []
         except Exception:
             pass
     # Nothing worked
     return []
+
 
 
 

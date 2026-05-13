@@ -193,12 +193,18 @@ Universal converter that automatically recognizes input type (SMILES, CID, InChI
 
 **Parameters:**
 - `input` (str or int): Chemical identifier
-- `rotate` (float): Rotation angle (default: 0.0)
+- `angle` (float): Rotation angle (default: 0.0)
 - `aromatic_circles` (bool): Draw aromatic circles (default: False)
-- `relative_angle` (bool): Use relative angles (default: False)
 - `show_carbons` (bool): Show carbon symbols (default: True)
+- `show_methyls` (bool): Show methyl groups (default: False)
+- `flip` (bool): Horizontal flip (default: False)
+- `flop` (bool): Vertical flip (default: False)
+- `selection` (str): For formulas, one of `first`, `random`, `all`, `first_n` (default: `first`)
+- `n` (int): Number of molecules when `selection='first_n'`
+- `enumerate_stereo` (bool): Enumerate stereoisomers locally with RDKit (default: False)
+- `wrap_chemfig` (bool): Wrap output in `\\chemfig{...}` (default: True)
 
-**Returns:** A list of dictionaries with 'normal', 'draft', 'iupac_name', and 'name' keys. Each dictionary corresponds to an isomer.
+**Returns:** A list of dictionaries with 'normal', 'draft', 'iupac_name', and 'name' keys. Each dictionary corresponds to an isomer. Returns an empty list on failure.
 
 
 ## How It Works
@@ -226,7 +232,7 @@ from mol2lewis import lewis
 print(lewis("O"))
 
 # Benzene with aromatic circle
-print(lewis("c1ccccc1", aromatic=True))
+print(lewis("c1ccccc1", aromatic_circles=True))
 
 # Ethanol from different sources
 print(lewis("CCO"))           # SMILES

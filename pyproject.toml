@@ -36,9 +36,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://https://github.com/mmartrou/mol2lewis"
+Homepage = "https://github.com/mmartrou/mol2lewis"
 Repository = "https://github.com/mmartrou/mol2lewis"
-Documentation = "https://https://github.com/mmartrou/mol2lewis/blob/master/README.md"
+Documentation = "https://github.com/mmartrou/mol2lewis/blob/master/README.md"
 
 [tool.setuptools]
 packages = ["mol2lewis"]
