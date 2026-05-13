@@ -44,6 +44,8 @@ def _add_iupac_and_common_name(result_dict, smiles):
 
 
 def _is_chemical_formula(s):
+    if not isinstance(s, str):
+        return False
     return bool(re.match(r'^[A-Z][a-z]?\d*([A-Z][a-z]?\d*)*$', s))
 
 
@@ -409,12 +411,12 @@ def lewis(input_string, **options):
             return []
     
     # Last resort: try as chemical formula (e.g., 'C2H4O2')
-    if _is_chemical_formula(input_string):
+    if _is_chemical_formula(input_str):
         selection = options.get('selection', 'first')
         n = options.get('n', None)
         enumerate_stereo = bool(options.get('enumerate_stereo', False))
         try:
-            compounds = pcp.get_compounds(input_string, 'formula')
+            compounds = pcp.get_compounds(input_str, 'formula')
             if not compounds:
                 # Return empty list so caller can safely iterate
                 return []
