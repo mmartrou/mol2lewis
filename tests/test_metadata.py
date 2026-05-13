@@ -1,15 +1,29 @@
 from pathlib import Path
+import re
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11
+    tomllib = None
 
 from mol2lewis import __version__
 
 
 def test_package_version_matches_pyproject():
     repo_root = Path(__file__).resolve().parents[1]
-    pyproject = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
+    pyproject_text = (repo_root / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert pyproject["project"]["version"] == __version__
+    if tomllib is not None:
+        pyproject = tomllib.loads(pyproject_text)
+        version = pyproject["project"]["version"]
+    else:
+        project_section = re.search(r"\[project\](.*?)(?:\n\[|\Z)", pyproject_text, re.S)
+        assert project_section is not None
+        match = re.search(r'^version\s*=\s*"([^"]+)"', project_section.group(1), re.M)
+        assert match is not None
+        version = match.group(1)
+
+    assert version == __version__
 
 
 def test_sty_files_are_identical():
